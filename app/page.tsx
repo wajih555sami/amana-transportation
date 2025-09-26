@@ -1,103 +1,165 @@
-import Image from "next/image";
+"use client";
+
+
+import { useState } from "react";
+import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+// Sample JSON data (replace with API later)
+import busData from "./data.json"; // <- place your JSON here in app folder
+
+// Bus icon
+const busIcon = new L.Icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/61/61205.png",
+  iconSize: [32, 32],
+});
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const busLines = busData.bus_lines;
+  const [selectedBusId, setSelectedBusId] = useState(busLines[0].id);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const selectedBus = busLines.find((bus) => bus.id === selectedBusId);
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      {/* Header */}
+      <header className="bg-gray-800 text-white">
+        <div className="flex justify-between items-center px-4 py-2">
+          <span className="font-bold">AmanaLogo</span>
+          <button className="text-sm">Menu</button>
         </div>
+        <div className="text-center py-4 bg-green-500 text-black">
+          <h1 className="text-lg font-bold">Amana Transportation</h1>
+          <p>Proudly Servicing Malaysian Bus Riders Since 2019</p>
+        </div>
+      </header>
+
+      {/* Main */}
+      <main className="flex-1 space-y-6 p-4">
+        {/* Section 1 - Active Bus Map */}
+        <section className="space-y-4">
+          <h2 className="text-center font-semibold bg-yellow-200 p-2">
+            Active Bus Map
+          </h2>
+
+          {/* Bus selection buttons */}
+          <div className="flex flex-wrap gap-2 justify-center">
+            {busLines.map((bus) => (
+              <button
+                key={bus.id}
+                onClick={() => setSelectedBusId(bus.id)}
+                className={`px-3 py-1 rounded ${
+                  bus.id === selectedBusId
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-200"
+                }`}
+              >
+                {bus.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Map */}
+          {selectedBus && (
+            <MapContainer
+              center={[
+                selectedBus.current_location.latitude,
+                selectedBus.current_location.longitude,
+              ]}
+              zoom={12}
+              className="h-72 w-full"
+            >
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              {/* Bus stops */}
+              {selectedBus.bus_stops.map((stop) => (
+                <Marker
+                  key={stop.id}
+                  position={[stop.latitude, stop.longitude]}
+                >
+                  <Popup>
+                    {stop.name} <br /> ETA: {stop.estimated_arrival}
+                  </Popup>
+                </Marker>
+              ))}
+              {/* Bus route line */}
+              <Polyline
+                positions={selectedBus.bus_stops.map((stop) => [
+                  stop.latitude,
+                  stop.longitude,
+                ])}
+                color="black"
+              />
+              {/* Current bus location */}
+              <Marker
+                position={[
+                  selectedBus.current_location.latitude,
+                  selectedBus.current_location.longitude,
+                ]}
+                icon={busIcon}
+              >
+                <Popup>Current Bus Location</Popup>
+              </Marker>
+            </MapContainer>
+          )}
+        </section>
+
+        {/* Section 2 - Bus Schedule */}
+        <section className="space-y-4">
+          <h2 className="text-center font-semibold bg-yellow-200 p-2">
+            Bus Schedule
+          </h2>
+
+          {/* Bus selection buttons */}
+          <div className="flex flex-wrap gap-2 justify-center">
+            {busLines.map((bus) => (
+              <button
+                key={bus.id}
+                onClick={() => setSelectedBusId(bus.id)}
+                className={`px-3 py-1 rounded ${
+                  bus.id === selectedBusId
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-200"
+                }`}
+              >
+                {bus.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Schedule table */}
+          <table className="w-full border border-gray-300 text-sm">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-2 border">Bus Stop</th>
+                <th className="p-2 border">Next Time of Arrival</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedBus?.bus_stops.map((stop) => (
+                <tr
+                  key={stop.id}
+                  className={`text-center ${
+                    stop.is_next_stop ? "bg-orange-300" : ""
+                  }`}
+                >
+                  <td className="p-2 border">{stop.name}</td>
+                  <td className="p-2 border">{stop.estimated_arrival}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      {/* Footer */}
+      <footer className="bg-gray-700 text-white text-center py-2">
+        All Rights Reserved
       </footer>
     </div>
   );
 }
+
+
+
+
